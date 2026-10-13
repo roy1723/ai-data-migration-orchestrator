@@ -1,0 +1,22 @@
+{
+  "hints": [
+    {
+      "target": "GiftTransaction.PaymentChannel",
+      "code": "unknown_column",
+      "advice": "The mapping sheet points at a target field that does not exist. Leave it out of the INSERT and report it.",
+      "action": "skip_column",
+      "value": null,
+      "times_seen": 1,
+      "last_seen": "2026-10-13"
+    },
+    {
+      "target": "GiftTransaction.Status",
+      "code": "required_missing",
+      "advice": "A required target field has no mapping. Set it to the documented default.",
+      "action": "use_default",
+      "value": "Completed",
+      "times_seen": 1,
+      "last_seen": "2026-10-13"
+    }
+  ]
+}

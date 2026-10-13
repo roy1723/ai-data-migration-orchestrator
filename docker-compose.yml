@@ -1,0 +1,22 @@
+# docker compose run --rm cli                      -> offline stub
+# docker compose run --rm cli --llm gemini --reset-memory   -> needs GEMINI_API_KEY in .env
+# docker compose up ui                             -> Streamlit on http://localhost:8501
+services:
+  cli:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+  ui:
+    build: .
+    entrypoint: ["streamlit", "run", "ui/app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data

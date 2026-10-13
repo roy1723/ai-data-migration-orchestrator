@@ -1,0 +1,27 @@
+{
+  "constituent": [
+    {"constituent_id": 1, "constituent_type": "Individual",   "first_name": "Asha",  "last_name": "Verma",  "org_name": null, "email": "Asha.Verma@Example.org", "phone": "555-0101"},
+    {"constituent_id": 2, "constituent_type": "Individual",   "first_name": " Ravi", "last_name": "Mehta ", "org_name": null, "email": "RAVI@example.org",       "phone": null},
+    {"constituent_id": 3, "constituent_type": "Organization", "first_name": null,    "last_name": null,     "org_name": " Bright Future Foundation ", "email": "info@bff.example.org", "phone": "555-0199"},
+    {"constituent_id": 4, "constituent_type": "Individual",   "first_name": "Meera", "last_name": "Singh",  "org_name": null, "email": null, "phone": "555-0104"},
+    {"constituent_id": 5, "constituent_type": "Organization", "first_name": null,    "last_name": null,     "org_name": "Green Earth Trust", "email": null, "phone": null}
+  ],
+  "fund": [
+    {"fund_id": 10, "fund_name": "General Fund",      "fund_description": "Unrestricted giving"},
+    {"fund_id": 11, "fund_name": "Scholarship Fund",  "fund_description": "Student scholarships"},
+    {"fund_id": 12, "fund_name": "Building Fund",     "fund_description": null}
+  ],
+  "appeal": [
+    {"appeal_id": 100, "appeal_name": " Annual Appeal 2024 ", "start_date": "2024-01-15"},
+    {"appeal_id": 101, "appeal_name": "Spring Gala",          "start_date": "2024-04-01"}
+  ],
+  "gift": [
+    {"gift_id": 1001, "constituent_id": 1, "fund_id": 10, "appeal_id": 100,  "gift_total": 250.00,  "gift_date": "03/15/2024", "payment_type": "Credit Card"},
+    {"gift_id": 1002, "constituent_id": 1, "fund_id": 11, "appeal_id": null, "gift_total": 75.5,    "gift_date": "07/01/2024", "payment_type": "Check"},
+    {"gift_id": 1003, "constituent_id": 2, "fund_id": 10, "appeal_id": 101,  "gift_total": 1000.00, "gift_date": "04/20/2024", "payment_type": "Wire"},
+    {"gift_id": 1004, "constituent_id": 3, "fund_id": 12, "appeal_id": 100,  "gift_total": 5000.00, "gift_date": "01/31/2024", "payment_type": "Wire"},
+    {"gift_id": 1005, "constituent_id": 4, "fund_id": 10, "appeal_id": null, "gift_total": 20.00,   "gift_date": "12/24/2023", "payment_type": "Cash"},
+    {"gift_id": 1006, "constituent_id": 5, "fund_id": 11, "appeal_id": 101,  "gift_total": 300.00,  "gift_date": "05/05/2024", "payment_type": "Check"},
+    {"gift_id": 1007, "constituent_id": 2, "fund_id": 12, "appeal_id": 100,  "gift_total": 150.25,  "gift_date": "09/09/2024", "payment_type": "Credit Card"}
+  ]
+}

@@ -1,0 +1,22 @@
+source_table,source_field,target_object,target_field,transformation,notes
+constituent,constituent_id,Account,Legacy_Id__c,direct,Organizations only (constituent_type = 'Organization')
+constituent,org_name,Account,Name,trim,Organizations only
+constituent,phone,Account,Phone,direct,Organizations only
+constituent,constituent_id,Contact,Legacy_Id__c,direct,Individuals only (constituent_type = 'Individual')
+constituent,first_name,Contact,FirstName,trim,Individuals only
+constituent,last_name,Contact,LastName,trim,Individuals only
+constituent,email,Contact,Email,lowercase,Individuals only
+constituent,phone,Contact,Phone,direct,Individuals only
+appeal,appeal_id,Campaign,Legacy_Id__c,direct,
+appeal,appeal_name,Campaign,Name,trim,
+appeal,start_date,Campaign,StartDate,direct,
+fund,fund_id,GiftDesignation,Legacy_Id__c,direct,
+fund,fund_name,GiftDesignation,Name,trim,
+gift,gift_id,GiftTransaction,Legacy_Id__c,direct,
+gift,constituent_id,GiftTransaction,DonorId,lookup Contact by Legacy_Id__c,Resolve the donor through the migrated Contact
+gift,gift_total,GiftTransaction,OriginalAmount,cast to text with 2 decimals,
+gift,gift_date,GiftTransaction,TransactionDate,parse date MM/DD/YYYY,Legacy text date
+gift,payment_type,GiftTransaction,PaymentMethod,direct,
+gift,appeal_id,GiftTransaction,CampaignId,lookup Campaign by Legacy_Id__c,Optional
+gift,fund_id,GiftTransaction,GiftDesignationId,lookup GiftDesignation by Legacy_Id__c,
+gift,payment_type,GiftTransaction,PaymentChannel,direct,Mapping sheet row added by a business analyst

@@ -1,0 +1,54 @@
+{
+  "system": "Raiser's Edge (dummy legacy export)",
+  "tables": {
+    "constituent": {
+      "description": "Donors: people and organisations",
+      "primary_key": "constituent_id",
+      "fields": {
+        "constituent_id":   {"type": "INTEGER", "nullable": false},
+        "constituent_type": {"type": "VARCHAR", "length": 20,  "nullable": false, "description": "Individual or Organization"},
+        "first_name":       {"type": "VARCHAR", "length": 50,  "nullable": true},
+        "last_name":        {"type": "VARCHAR", "length": 50,  "nullable": true},
+        "org_name":         {"type": "VARCHAR", "length": 100, "nullable": true},
+        "email":            {"type": "VARCHAR", "length": 120, "nullable": true},
+        "phone":            {"type": "VARCHAR", "length": 20,  "nullable": true}
+      }
+    },
+    "fund": {
+      "description": "Funds that gifts are designated to",
+      "primary_key": "fund_id",
+      "fields": {
+        "fund_id":          {"type": "INTEGER", "nullable": false},
+        "fund_name":        {"type": "VARCHAR", "length": 100, "nullable": false},
+        "fund_description": {"type": "VARCHAR", "length": 255, "nullable": true}
+      }
+    },
+    "appeal": {
+      "description": "Fundraising appeals (Raiser's Edge calls them appeals)",
+      "primary_key": "appeal_id",
+      "fields": {
+        "appeal_id":   {"type": "INTEGER", "nullable": false},
+        "appeal_name": {"type": "VARCHAR", "length": 100, "nullable": false},
+        "start_date":    {"type": "DATE", "nullable": true}
+      }
+    },
+    "gift": {
+      "description": "Donations. gift_date is stored as text in MM/DD/YYYY format in the legacy export.",
+      "primary_key": "gift_id",
+      "foreign_keys": [
+        {"field": "constituent_id", "references": "constituent.constituent_id"},
+        {"field": "fund_id",        "references": "fund.fund_id"},
+        {"field": "appeal_id",    "references": "appeal.appeal_id"}
+      ],
+      "fields": {
+        "gift_id":        {"type": "INTEGER", "nullable": false},
+        "constituent_id": {"type": "INTEGER", "nullable": false},
+        "fund_id":        {"type": "INTEGER", "nullable": false},
+        "appeal_id":    {"type": "INTEGER", "nullable": true},
+        "gift_total":     {"type": "DECIMAL", "precision": 12, "scale": 2, "nullable": false},
+        "gift_date":      {"type": "VARCHAR", "length": 10, "nullable": false, "description": "MM/DD/YYYY text"},
+        "payment_type":   {"type": "VARCHAR", "length": 30, "nullable": true}
+      }
+    }
+  }
+}

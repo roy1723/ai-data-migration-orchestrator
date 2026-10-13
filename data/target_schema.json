@@ -1,0 +1,60 @@
+{
+  "system": "Salesforce Nonprofit Cloud (dummy, illustrative field names)",
+  "note": "Object names follow Salesforce Nonprofit Cloud (GiftTransaction, GiftDesignation). Field names, lengths and types are illustrative. OriginalAmount is deliberately typed as TEXT to exercise the validator.",
+  "objects": {
+    "Account": {
+      "description": "Organisation donors",
+      "fields": {
+        "Id":           {"type": "ID", "required": true},
+        "Legacy_Id__c": {"type": "TEXT", "length": 50,  "required": false, "description": "Raiser's Edge constituent_id, used to resolve lookups"},
+        "Name":         {"type": "TEXT", "length": 255, "required": true},
+        "Type":         {"type": "TEXT", "length": 40,  "required": false},
+        "Phone":        {"type": "PHONE", "length": 40, "required": false}
+      }
+    },
+    "Contact": {
+      "description": "Individual donors",
+      "fields": {
+        "Id":           {"type": "ID", "required": true},
+        "Legacy_Id__c": {"type": "TEXT", "length": 50, "required": false},
+        "FirstName":    {"type": "TEXT", "length": 40, "required": false},
+        "LastName":     {"type": "TEXT", "length": 80, "required": true},
+        "Email":        {"type": "EMAIL", "length": 80, "required": false},
+        "Phone":        {"type": "PHONE", "length": 40, "required": false},
+        "AccountId":    {"type": "LOOKUP", "references": "Account", "required": false}
+      }
+    },
+    "Campaign": {
+      "description": "Fundraising campaigns",
+      "fields": {
+        "Id":           {"type": "ID", "required": true},
+        "Legacy_Id__c": {"type": "TEXT", "length": 50, "required": false},
+        "Name":         {"type": "TEXT", "length": 80, "required": true},
+        "StartDate":    {"type": "DATE", "required": false}
+      }
+    },
+    "GiftDesignation": {
+      "description": "Where a gift is directed (legacy funds)",
+      "fields": {
+        "Id":           {"type": "ID", "required": true},
+        "Legacy_Id__c": {"type": "TEXT", "length": 50,  "required": false},
+        "Name":         {"type": "TEXT", "length": 80,  "required": true},
+        "Description":  {"type": "TEXT", "length": 255, "required": false}
+      }
+    },
+    "GiftTransaction": {
+      "description": "A completed donation",
+      "fields": {
+        "Id":                {"type": "ID", "required": true},
+        "Legacy_Id__c":      {"type": "TEXT", "length": 50, "required": false},
+        "DonorId":           {"type": "LOOKUP", "references": "Contact", "required": true},
+        "OriginalAmount":    {"type": "TEXT", "length": 50, "required": false, "description": "Deliberately TEXT in this dummy sandbox"},
+        "TransactionDate":   {"type": "DATE", "required": false},
+        "PaymentMethod":     {"type": "TEXT", "length": 40, "required": false},
+        "Status":            {"type": "TEXT", "length": 40, "required": true, "description": "Required; no legacy equivalent"},
+        "CampaignId":        {"type": "LOOKUP", "references": "Campaign", "required": false},
+        "GiftDesignationId": {"type": "LOOKUP", "references": "GiftDesignation", "required": false}
+      }
+    }
+  }
+}
