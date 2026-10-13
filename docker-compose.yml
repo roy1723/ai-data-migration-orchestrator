@@ -1,7 +1,6 @@
 # docker compose up                                           -> Streamlit on http://localhost:8501 (the only service that starts by default)
 # docker compose --profile cli run --rm cli                    -> offline stub, one-shot CLI run
 # docker compose --profile cli run --rm cli --llm groq --reset-memory    -> needs GROQ_API_KEY in .env
-# docker compose --profile cli run --rm cli --llm gemini --reset-memory  -> needs GEMINI_API_KEY in .env
 services:
   cli:
     profiles: ["cli"]

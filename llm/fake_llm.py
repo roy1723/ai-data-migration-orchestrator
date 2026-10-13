@@ -11,7 +11,7 @@ not exist, and it forgets the default for a required field. That makes the
 validator find real problems and exercises the retry loop. It also honours
 memory hints, so a second run is clean.
 
-Outputs generated with this backend are labelled as such. Use --llm gemini for
+Outputs generated with this backend are labelled as such. Use --llm groq for
 genuinely model-generated output.
 """
 from __future__ import annotations

@@ -1,7 +1,7 @@
 """AI Data Migration Orchestrator: multi-agent SQL generation with LangGraph.
 
     python main.py                  # offline stub LLM, no key needed
-    python main.py --llm gemini     # real model (needs GEMINI_API_KEY)
+    python main.py --llm groq       # real model (needs GROQ_API_KEY)
 
 Flow:  memory_recall -> schema_analyst -> sql_generator -> validator
        validator --FIXABLE issues and attempts left--> sql_generator   (auto re-prompt)
@@ -27,7 +27,7 @@ from llm.base import make_client
 ROOT = Path(__file__).resolve().parent
 log = logging.getLogger("orchestrator")
 
-try:  # read GEMINI_API_KEY etc. from .env if python-dotenv is installed; real environment variables win
+try:  # read GROQ_API_KEY etc. from .env if python-dotenv is installed; real environment variables win
     from dotenv import load_dotenv
     load_dotenv(ROOT / ".env")
 except ImportError:
@@ -127,7 +127,7 @@ def print_summary(state: dict, out_dir: Path) -> None:
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Multi-agent SQL migration generator")
-    p.add_argument("--llm", choices=["fake", "gemini", "groq"], default="fake", help="LLM backend (default: offline stub)")
+    p.add_argument("--llm", choices=["fake", "groq"], default="fake", help="LLM backend (default: offline stub)")
     p.add_argument("--max-retries", type=int, default=2, help="re-prompts allowed after the first attempt (default 2)")
     p.add_argument("--data-dir", default=str(ROOT / "data"))
     p.add_argument("--out-dir", default=str(ROOT / "outputs"))

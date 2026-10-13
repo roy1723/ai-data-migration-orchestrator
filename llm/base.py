@@ -1,6 +1,6 @@
 """The only thing the agents know about a language model.
 
-Every agent calls LLMClient.complete(system, prompt). Swapping Gemini for any
+Every agent calls LLMClient.complete(system, prompt). Swapping Groq for any
 other backend (OpenAI, Hugging Face Transformers, a local model) means writing
 one small subclass.
 """
@@ -22,15 +22,12 @@ class LLMClient(ABC):
 
 
 def make_client(kind: str, **kwargs) -> LLMClient:
-    """Factory used by main.py: 'fake' for the offline stub, 'gemini' for the real model."""
+    """Factory used by main.py: 'fake' for the offline stub, 'groq' for the real model."""
     kind = kind.lower()
     if kind == "fake":
         from .fake_llm import FakeLLM
         return FakeLLM(**kwargs)
-    if kind == "gemini":
-        from .gemini_client import GeminiClient
-        return GeminiClient(**kwargs)
     if kind == "groq":
         from .groq_client import GroqClient
         return GroqClient(**kwargs)
-    raise ValueError(f"Unknown LLM backend '{kind}'. Use 'fake', 'gemini', or 'groq'.")
+    raise ValueError(f"Unknown LLM backend '{kind}'. Use 'fake' or 'groq'.")

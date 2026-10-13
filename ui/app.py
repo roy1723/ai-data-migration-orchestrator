@@ -80,9 +80,8 @@ with st.expander("ℹ️  How this works, in plain terms"):
 with st.sidebar:
     st.markdown("### Run settings")
     backend = st.radio(
-        "LLM backend", ["fake", "gemini", "groq"],
-        help="**fake** = offline rule-based stub, no key needed. **gemini** needs GEMINI_API_KEY. "
-             "**groq** needs GROQ_API_KEY.",
+        "LLM backend", ["fake", "groq"],
+        help="**fake** = offline rule-based stub, no key needed. **groq** needs GROQ_API_KEY.",
     )
     retries = st.slider("Re-prompts allowed", 0, 4, 2,
                         help="How many times the Validator may send the SQL back to the Generator with "

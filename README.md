@@ -13,8 +13,6 @@ python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\a
 pip install -r requirements.txt
 
 python main.py --reset-memory            # offline stub, no key needed
-export GEMINI_API_KEY=...                # Windows: set GEMINI_API_KEY=...
-python main.py --llm gemini --reset-memory   # real model (Google)
 export GROQ_API_KEY=...                  # Windows: set GROQ_API_KEY=...
 python main.py --llm groq --reset-memory     # real model (Groq, OpenAI-compatible API)
 streamlit run ui/app.py                  # optional UI
@@ -25,8 +23,7 @@ pytest -q                                # 34 tests, no network
 
 ```bash
 cp .env.example .env        # Windows: copy .env.example .env
-# edit .env and set GEMINI_API_KEY and/or GROQ_API_KEY (and the matching *_MODEL if needed)
-python main.py --llm gemini --reset-memory
+# edit .env and set GROQ_API_KEY (and GROQ_MODEL if needed)
 python main.py --llm groq --reset-memory
 ```
 
@@ -38,7 +35,6 @@ python main.py --llm groq --reset-memory
 docker compose up                                    # Streamlit at http://localhost:8501 - the only thing this starts
 docker compose --profile cli run --rm cli            # offline stub, one-shot CLI run
 docker compose --profile cli run --rm cli --llm groq --reset-memory     # needs GROQ_API_KEY in .env
-docker compose --profile cli run --rm cli --llm gemini --reset-memory   # needs GEMINI_API_KEY in .env
 ```
 
 `docker compose up` with no arguments and no profile only brings up the `ui` service - the `cli` service is gated behind the `cli` Compose profile specifically so a bare `docker compose up` is a clean, single-purpose Streamlit demo with no other container starting, running once, and exiting alongside it.
@@ -59,15 +55,15 @@ Options: `--max-retries N` (re-prompts after the first attempt, default 2), `--n
 - **Real model (used to generate the shipped outputs): Groq**, via its OpenAI-compatible chat completions API (`llm/groq_client.py`, stdlib `urllib`, no extra SDK). Default model is `openai/gpt-oss-20b` (`GROQ_MODEL`), temperature 0, JSON mode on. Two things specific to Groq's free tier that this client handles explicitly:
   - Groq's Cloudflare WAF rejects `urllib`'s default User-Agent as bot-like, so every request sends a custom one.
   - The free tier caps at 8000 tokens/minute, and `gpt-oss` models spend part of their budget on hidden reasoning before the JSON answer. The client sets `reasoning_effort: "low"` and an explicit `max_completion_tokens`, and on a 429 it parses the server's own "try again in Ns" and waits exactly that long before retrying (`RateLimitError.retry_after`) instead of blind exponential backoff.
-- **Real model (integration untested live): Google Gemini** through the `google-genai` SDK (`llm/gemini_client.py`, `GEMINI_MODEL`/`GEMINI_API_KEY`). The client is covered by mocked unit tests but has not completed a live call in this environment — the free tier's daily quota (20 requests/day) was exhausted during testing before a full run finished. Treat it as implemented-and-tested-offline rather than proven end-to-end; `--llm groq` is the backend actually exercised against a real model.
-- **Offline stub:** `llm/fake_llm.py` is a rule-based stand-in so the project runs and is testable without any key. It is **not a language model**. It reads the same prompts as the real backends, deliberately behaves naively on the first attempt (keeps a mapping row that points at a field that does not exist; forgets the default for a required field) so that the validator and the retry loop have something real to do.
-- **The files in `outputs/` in this zip were generated with `--llm groq`** (check the header of `sample_output.sql` for the backend and model and `validation_report.md`'s attempt history for the current run's specifics). Groq is not perfectly deterministic run to run even at temperature 0, so the exact attempt count varies: some runs pass cleanly on attempt 1, others fail first and self-correct on attempt 2. Both have been observed against this live model during development - see the date-parsing bug below for a real example of the latter, caught by `check_date_parsing` and fixed by the retry loop. Re-run with `--reset-memory` if you want to see the retry loop exercised fresh, or with `--llm fake` / `--llm gemini` to compare backends. Swapping providers means writing one small subclass of `LLMClient`.
+- **Offline stub:** `llm/fake_llm.py` is a rule-based stand-in so the project runs and is testable without any key. It is **not a language model**. It reads the same prompts as the real backend, deliberately behaves naively on the first attempt (keeps a mapping row that points at a field that does not exist; forgets the default for a required field) so that the validator and the retry loop have something real to do.
+- **The files in `outputs/` in this zip were generated with `--llm groq`** (check the header of `sample_output.sql` for the backend and model and `validation_report.md`'s attempt history for the current run's specifics). Groq is not perfectly deterministic run to run even at temperature 0, so the exact attempt count varies: some runs pass cleanly on attempt 1, others fail first and self-correct on attempt 2. Both have been observed against this live model during development - see the date-parsing bug below for a real example of the latter, caught by `check_date_parsing` and fixed by the retry loop. Re-run with `--reset-memory` if you want to see the retry loop exercised fresh, or with `--llm fake` to compare against the offline stub. Swapping providers means writing one small subclass of `LLMClient`.
+- **Google Gemini was evaluated early on and dropped.** An initial `llm/gemini_client.py` implementation hit its free tier's 20-requests/day quota before a full run completed (see "Problems hit" below); rather than ship an unverified integration, it was removed in favour of a single real backend (Groq) that is actually proven end-to-end. There is no `--llm gemini` option in this codebase.
 
 ## Problems hit while building this, and how they were resolved
 
 Documented here rather than glossed over, since the real debugging is part of the engineering story:
 
-1. **Gemini's free tier ran out mid-build.** The daily quota for `generativelanguage.googleapis.com` on the free tier is 20 requests/day. That was exhausted during testing before a single full pipeline run with Gemini completed. Rather than wait ~14 hours for the quota to reset, Groq was added as a second real backend (`llm/groq_client.py`) and became the one actually exercised end-to-end — Gemini is implemented and covered by mocked unit tests, but its live-API path is the less-proven one. Both are disclosed honestly above rather than presenting Gemini as "done" when it wasn't verified live.
+1. **Gemini's free tier ran out mid-build, so it was dropped.** The daily quota for `generativelanguage.googleapis.com` on the free tier is 20 requests/day. That was exhausted during testing before a single full pipeline run with Gemini completed, and waiting ~14 hours for the quota to reset was incompatible with the deadline. Rather than ship an integration that was never verified against the live API, `llm/gemini_client.py` was removed entirely; Groq became the one real backend, built and proven end-to-end instead.
 
 2. **Groq's Cloudflare WAF silently rejected requests with a 403.** The first live call returned `HTTP Error 403: Forbidden` with no useful body, which looked like a bad API key. It turned out to be Cloudflare's bot-detection rejecting Python's default `urllib` User-Agent string outright, unrelated to authentication. Fixed by sending a custom `User-Agent` header on every request.
 
@@ -136,7 +132,7 @@ On the first attempt the stub writes `PaymentChannel` and leaves out `Status`. T
 ```
 main.py            CLI and LangGraph wiring
 agents/            one module per agent + base class
-llm/               LLMClient interface, Gemini client, Groq client, offline stub
+llm/               LLMClient interface, Groq client, offline stub
 prompts/           prompt templates and few-shot examples
 core/              schema utils, deterministic analysis, SQLite runner, state, trace
 data/              dummy inputs and sample rows for the dry run
@@ -151,4 +147,4 @@ tests/             pytest suite
 - The validator checks single `INSERT ... SELECT` statements with simple expressions. It is not a full SQL type checker.
 - Memory is a flat JSON file keyed by (target, defect). It only stores defects of two kinds (unknown column, missing required column).
 - Groq's free tier caps at 8000 tokens/minute; a full pipeline run with retries can approach that, and the client backs off using the server's own suggested wait time on a 429.
-- The Gemini client has not been exercised against the live API in the environment where this was built (its daily free-tier quota was exhausted before a full run completed); it is covered by mocked unit tests only. Groq is the real backend actually used to produce the shipped `outputs/`.
+- Google Gemini was evaluated early on and removed after its free-tier daily quota was exhausted before a full run completed - see "Problems hit while building this" above. Groq is the only real backend in this codebase, and the one actually used to produce the shipped `outputs/`.

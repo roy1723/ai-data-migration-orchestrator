@@ -1,9 +1,9 @@
-"""Gemini client behaviour with a mocked SDK (no network, no key)."""
+"""LLM client plumbing, and the Groq client's behaviour with an injected transport (no network, no key)."""
 import pytest
 
 from agents.base import AgentError, BaseAgent, extract_json
 from llm.base import LLMClient, make_client
-from llm.gemini_client import GeminiClient
+from llm.groq_client import GroqClient
 
 
 class Scripted(LLMClient):
@@ -39,30 +39,21 @@ def test_unknown_backend_rejected():
         make_client("gpt-none")
 
 
-def test_gemini_client_uses_injected_sdk_client_and_retries():
-    class Resp:
-        text = '{"ok": true}'
+def test_groq_client_retries_on_transient_error():
+    calls = {"n": 0}
 
-    class Models:
-        def __init__(self):
-            self.calls = 0
+    def post(payload):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("503 unavailable")
+        return {"choices": [{"message": {"content": '{"ok": true}'}}]}
 
-        def generate_content(self, **kw):
-            self.calls += 1
-            if self.calls == 1:
-                raise RuntimeError("503 unavailable")
-            return Resp()
-
-    class Fake:
-        models = Models()
-
-    client = GeminiClient(model="test-model", client=Fake(), sleep=lambda s: None)
+    client = GroqClient(model="test-model", post=post, sleep=lambda s: None)
     assert client.complete("sys", "hello") == '{"ok": true}'
-    assert Fake.models.calls == 2
+    assert calls["n"] == 2
 
 
-def test_gemini_requires_key(monkeypatch):
-    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
-    with pytest.raises(RuntimeError, match="GEMINI_API_KEY"):
-        GeminiClient()
+def test_groq_requires_key(monkeypatch):
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    with pytest.raises(RuntimeError, match="GROQ_API_KEY"):
+        GroqClient()
