@@ -4,7 +4,7 @@ LLM backend: groq (openai/gpt-oss-20b). Written for an auditor or business stake
 
 ## Overview
 
-The migration script processed five tables in the order Account, Contact, Campaign, GiftDesignation, and GiftTransaction, ensuring referential integrity by loading parent records before child records. Two attempts were required to resolve initial data type and length issues, after which the script passed all automated checks. A total of 15 rows were migrated across the tables: 2 Accounts, 3 Contacts, 2 Campaigns, 3 GiftDesignations, and 5 GiftTransactions. Unresolved findings include length overflows on Contact.FirstName, Contact.Email, Campaign.Name, and GiftDesignation.Name; type and semantic mismatches on GiftTransaction.OriginalAmount and GiftTransaction.TransactionDate; unknown and unmapped fields such as GiftTransaction.PaymentChannel, GiftTransaction.Status, and fund.fund_description; and rows dropped due to join mismatches. These issues will need manual review before final deployment.
+The migration script processed five entity types in the order Account, Contact, Campaign, GiftDesignation, and GiftTransaction, ensuring referential integrity by loading parent records before child records. One successful attempt was required, with 2 Accounts, 3 Contacts, 2 Campaigns, 3 GiftDesignations, and 5 GiftTransactions transferred. All rows were retained except for those dropped due to join mismatches in GiftTransaction. Unresolved issues include length overflows on Contact.FirstName, Contact.Email, Campaign.Name, and GiftDesignation.Name; type and semantic mismatches on GiftTransaction.OriginalAmount and GiftTransaction.TransactionDate; unknown and unmapped fields such as GiftTransaction.PaymentChannel, GiftTransaction.Status, fund.fund_description; and semantic reviews needed for GiftTransaction.CampaignId and GiftTransaction.PaymentMethod. These findings must be addressed before final validation. 
 
 ## Statement by statement
 
@@ -12,23 +12,23 @@ The migration script processed five tables in the order Account, Contact, Campai
 
 **Purpose.** Migrates organization records from the constituent table into the Account object.
 
-All rows where the constituent_type is 'Organization' are inserted into Account. The legacy ID is copied as text, the organization name is trimmed of surrounding spaces, and the phone number is copied unchanged.
+The statement copies each organization’s ID, name, and phone number into a new Account record. It converts the numeric ID to text, removes leading and trailing spaces from the name, and copies the phone number as is. Only rows where the constituent_type is 'Organization' are included.
 
 **What happens to each field**
 
-- `Legacy_Id__c`: Copies constituent_id from constituent as text into Account.Legacy_Id__c.
-- `Name`: Copies org_name from constituent, removing leading and trailing spaces, into Account.Name.
-- `Phone`: Copies phone from constituent unchanged into Account.Phone.
+- `Legacy_Id__c`: Copies constituent_id from constituent and converts it to text.
+- `Name`: Copies org_name from constituent and removes surrounding spaces.
+- `Phone`: Copies phone from constituent without change.
 
 **Assumptions**
 
 - Only rows with constituent_type='Organization' are processed.
-- The CAST to TEXT preserves the numeric value of constituent_id.
+- The phone number format is acceptable for the PHONE field.
 
 **Risks**
 
-- If org_name contains internal spaces, only outer spaces are removed; internal formatting is unchanged.
-- Phone numbers are copied without validation; invalid formats may be stored.
+- If phone numbers contain non-numeric characters, they may not be stored correctly in the PHONE field.
+- If org_name contains only spaces, the resulting Name will be empty.
 
 <details><summary>SQL</summary>
 
@@ -102,7 +102,7 @@ INSERT INTO Campaign (Legacy_Id__c, Name, StartDate) SELECT CAST(a.appeal_id AS 
 
 **Purpose.** Migrates fund records into GiftDesignation.
 
-The statement copies each fund’s ID and name into the GiftDesignation table. It converts the numeric ID to text and removes any leading or trailing spaces from the name.
+The statement copies each fund’s ID and name into the GiftDesignation table. It converts the numeric ID to text and removes leading/trailing spaces from the name.
 
 **What happens to each field**
 
@@ -115,7 +115,7 @@ The statement copies each fund’s ID and name into the GiftDesignation table. I
 
 **Risks**
 
-- GiftDesignation.Name may truncate values longer than 80 characters, potentially losing data.
+- fund.fund_name values longer than 80 characters may be truncated or rejected due to GiftDesignation.Name length limit.
 
 <details><summary>SQL</summary>
 
@@ -127,35 +127,21 @@ INSERT INTO GiftDesignation (Legacy_Id__c, Name) SELECT CAST(f.fund_id AS TEXT),
 
 ### 5. GiftTransaction
 
-**Purpose.** Migrates gift records into Salesforce GiftTransaction objects
+**Purpose.** Migrates data into GiftTransaction.
 
-The statement copies data from the legacy gift table, converting and looking up related records, and inserts new GiftTransaction records with a default status of "Completed".
+Explanation unavailable (Groq call failed after 3 attempts: HTTP 400: {"error":{"message":"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.","type":"invalid_request_error","code":"json_validate_failed","failed_generation":"{\"purpose\":\"Migrates gift records into the GiftTransaction object.\",\"summary\":\"The statement copies each gift record, converting identifiers to text, formatting amounts and dates, and linking to related Contact, Campaign, and GiftDesignation records. It sets the status to \\\"Completed\\\" for all inserted transactions.\",\"transformations\":[{\"field\":\"Legacy_Id__c\",\"explanation\":\"Copies gift.gift_id as text into GiftTransaction.Legacy_Id__c.\"},{\"field\":\"DonorId\",\"explanation\":\"Looks up the Contact whose Legacy_Id__c matches gift.constituent_id and stores that Contact Id in GiftTransaction.DonorId.\"},{\"field\":\"OriginalAmount\",\"explanation\":\"Rounds gift.gift_total to two decimals, casts it to text, and stores it in GiftTransaction.OriginalAmount.\"},{\"field\":\"TransactionDate\",\"explanation\":\"Parses the MM/DD/YYYY string in gift.gift_date into a Date and stores it in GiftTransaction.TransactionDate.\"},{\"field\":\"PaymentMethod\",\"explanation\":\"Copies gift.payment_type directly into GiftTransaction.PaymentMethod.\"},{\"field\":\"CampaignId\",\"explanation\":\"Looks up the Campaign whose Legacy_Id__c matches gift.appeal_id and stores that Campaign Id in GiftTransaction.CampaignId, or leaves null if none.\"},{\"field\":\"GiftDesignationId\",\"explanation\":\"Looks up the GiftDesignation whose Legacy_Id__c matches gift.fund_id and stores that Id in GiftTransaction.GiftDesignationId.\"},{\"field\":\"Status\",\"explanation\":\"Sets the literal value \\\"Completed\\\" in GiftTransaction.Status for every inserted record.\"}],\"assumptions\":[\"Assumes every gift has a matching Contact record; otherwise the row is dropped.\"],\"risks\":[\"Rows may be dropped if no matching Contact, Campaign, or GiftDesignation is found; two source rows were dropped in the dry run.\"],\" }}"}}
+).
 
 **What happens to each field**
 
-- `Legacy_Id__c`: Copies gift.gift_id as text into GiftTransaction.Legacy_Id__c.
-- `DonorId`: Looks up Contact.Id where Contact.Legacy_Id__c matches gift.constituent_id and stores that Id in GiftTransaction.DonorId.
-- `OriginalAmount`: Rounds gift.gift_total to two decimals, casts to text, and stores in GiftTransaction.OriginalAmount.
-- `TransactionDate`: Parses gift.gift_date from MM/DD/YYYY text into a Date and stores in GiftTransaction.TransactionDate.
-- `PaymentMethod`: Copies gift.payment_type directly into GiftTransaction.PaymentMethod.
-- `CampaignId`: Looks up Campaign.Id where Campaign.Legacy_Id__c matches gift.appeal_id and stores in GiftTransaction.CampaignId; may be null if no match.
-- `GiftDesignationId`: Looks up GiftDesignation.Id where GiftDesignation.Legacy_Id__c matches gift.fund_id and stores in GiftTransaction.GiftDesignationId; may be null if no match.
-- `Status`: Sets the value "Completed" for every inserted GiftTransaction record.
-
-**Assumptions**
-
-- gift_date is always in MM/DD/YYYY format
-- gift.gift_total has at most two decimal places
-- lookups on Contact, Campaign, and GiftDesignation use Legacy_Id__c
-- all source rows have a matching Contact record
-
-**Risks**
-
-- Rows may be dropped if no matching Contact, Campaign, or GiftDesignation is found
-- TransactionDate parsing may fail for non‑MM/DD/YYYY dates
-- OriginalAmount stored as text may cause numeric issues
-- CampaignId and GiftDesignationId can be null, creating orphaned records
-- Status is hard‑coded to "Completed", potentially masking missing status data
+- `Legacy_Id__c`: Populates GiftTransaction.Legacy_Id__c (no explanation was returned).
+- `DonorId`: Populates GiftTransaction.DonorId (no explanation was returned).
+- `OriginalAmount`: Populates GiftTransaction.OriginalAmount (no explanation was returned).
+- `TransactionDate`: Populates GiftTransaction.TransactionDate (no explanation was returned).
+- `PaymentMethod`: Populates GiftTransaction.PaymentMethod (no explanation was returned).
+- `CampaignId`: Populates GiftTransaction.CampaignId (no explanation was returned).
+- `GiftDesignationId`: Populates GiftTransaction.GiftDesignationId (no explanation was returned).
+- `Status`: Populates GiftTransaction.Status (no explanation was returned).
 
 <details><summary>SQL</summary>
 
@@ -207,11 +193,8 @@ INSERT INTO GiftTransaction (Legacy_Id__c, DonorId, OriginalAmount, TransactionD
 | warning | Contact.FirstName | constituent.first_name allows 50 characters but Contact.FirstName allows 40; longer values will be truncated or rejected. | Profile the longest values, then shorten the source data or truncate deliberately. |
 | warning | GiftDesignation.Name | fund.fund_name allows 100 characters but GiftDesignation.Name allows 80; longer values will be truncated or rejected. | Profile the longest values, then shorten the source data or truncate deliberately. |
 | warning | GiftTransaction | 2 of 7 source rows for GiftTransaction were not loaded because a join found no matching parent record. | Review the unmatched source records and migrate or map their parents (for example, a different lookup for organisation donors). |
-| warning | GiftTransaction.CampaignId | Left join on Campaign may produce null CampaignId, potentially creating orphaned transactions. | Validate that CampaignId is required and enforce a lookup or error for missing campaigns. |
-| warning | GiftTransaction.GiftDesignationId | Lookup for GiftDesignation may fail if fund_id is missing, leading to null GiftDesignationId. | Add a check for missing GiftDesignation and log or flag such records. |
+| warning | GiftTransaction.CampaignId | CampaignId is left joined and may be null for some gifts, potentially losing campaign context. | Add a check to ensure CampaignId is populated or handle nulls appropriately. |
 | warning | GiftTransaction.OriginalAmount | gift_total is decimal(12,2), but mapped to Text in Salesforce (GiftTransaction.OriginalAmount). | Prefer a Currency or Number target. If text is intended, cast explicitly and keep two decimals. |
-| warning | GiftTransaction.Status | Defaulting Status to 'Completed' may mask missing or incorrect status values. | Map Status from source or flag records with missing status for review. |
 | warning | GiftTransaction.TransactionDate | gift_date is varchar(10) text but GiftTransaction.TransactionDate is a Date; the value must be parsed, not cast. | Parse with the legacy format and reject or log rows that do not match. |
-| info | GiftTransaction.DonorId | Lookup of DonorId via Contact may fail if the donor is an Organization, causing missing donor references. | Ensure donor lookup includes both Contact and Account or handle missing donors appropriately. |
-| info | GiftTransaction.TransactionDate | Parsing gift_date as MM/DD/YYYY assumes all dates follow this format; inconsistent formats could cause silent failures. | Validate date format before parsing or use a more robust date parser. |
+| info | GiftTransaction.PaymentMethod | PaymentMethod values are copied directly; if the source contains unexpected codes, they may not map to the target system's enum. | Validate PaymentMethod against the target system's allowed values and map or flag unknown codes. |
 | info | fund.fund_description | fund.fund_description is not mapped, so its data will not be migrated. | Confirm it is safe to drop. |
