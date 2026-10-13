@@ -1,5 +1,7 @@
 # AI Data Migration Orchestrator (multi-agent)
 
+GitHub: https://github.com/roy1723/ai-data-migration-orchestrator
+
 Four LLM agents cooperate, with no human in the loop, to turn a source schema, a target schema and a field-mapping sheet into migration SQL (Raiser's Edge -> Salesforce Nonprofit Cloud), a validation report and a plain-English explanation. A Memory Agent, an automatic re-prompt loop, a CLI summary and a Streamlit UI are included as extras.
 
 All data is dummy and small: 4 source tables, 5 target objects, 21 mapping rows. Salesforce object names (`GiftTransaction`, `GiftDesignation`) follow the Nonprofit Cloud docs; the field names are illustrative and were not checked against a real org.
